@@ -23,6 +23,8 @@ jobs:
 
       - name: Package
         run: dotnet pack src/GovUk.OneLogin.AspNetCore/ --configuration Release --no-build
+        env:
+          MINVERBUILDMETADATA: ${{ env.GITHUB_RUN_NUMBER }}
 
       - name: Publish package artifact
         uses: actions/upload-artifact@v3
