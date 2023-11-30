@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches:
+     - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: "Build & package"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Package
+        run: dotnet pack src/GovUk.OneLogin.AspNetCore/ --configuration Release --no-build
+
+      - name: Publish package artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: GovUk.OneLogin.AspNetCore.nupkg
+          path: src/GovUk.OneLogin.AspNetCore/bin/Release/*.nupkg
