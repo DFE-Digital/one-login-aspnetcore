@@ -8,11 +8,13 @@ namespace GovUk.OneLogin.AspNetCore;
 
 internal class ProcessCoreIdentityJwtClaimAction : ClaimAction
 {
+    public new const string ClaimType = "https://vocab.account.gov.uk/v1/coreIdentityJWT";
+
     private readonly JwtSecurityTokenHandler _tokenHandler;
     private readonly TokenValidationParameters _tokenValidationParameters;
 
     public ProcessCoreIdentityJwtClaimAction(OneLoginOptions oneLoginOptions) :
-        base("https://vocab.account.gov.uk/v1/coreIdentityJWT", valueType: JsonClaimValueTypes.Json)
+        base(ClaimType, valueType: JsonClaimValueTypes.Json)
     {
         OneLoginOptions.ValidateOptionNotNull(oneLoginOptions.CoreIdentityClaimIssuer);
         OneLoginOptions.ValidateOptionNotNull(oneLoginOptions.CoreIdentityClaimIssuerSigningKey);
@@ -51,8 +53,7 @@ internal class ProcessCoreIdentityJwtClaimAction : ClaimAction
             throw new SecurityTokenException("The 'sub' claim in the core identity JWT does not match the 'sub' claim from the ID token.");
         }
 
-        var vot = coreIdentityPrincipal.FindFirstValue("vot");
-        identity.AddClaim(new Claim("vot", vot));
+        identity.AddClaim(new Claim(ClaimType, token!, valueType: "JSON"));
 
         var vc = coreIdentityPrincipal.FindFirstValue("vc");
         identity.AddClaim(new Claim("vc", vc, valueType: "JSON"));
