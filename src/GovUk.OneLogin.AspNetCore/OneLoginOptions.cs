@@ -144,7 +144,11 @@ public class OneLoginOptions
         ValidateOptionNotNull(VectorsOfTrust);
 
         context.ProtocolMessage.Parameters.Add("vtr", VectorsOfTrust);
-        context.ProtocolMessage.Parameters.Add("claims", GetClaimsRequest());
+
+        if (GetClaimsRequest() is string claimsRequest)
+        {
+            context.ProtocolMessage.Parameters.Add("claims", claimsRequest);
+        }
 
         if (UiLocales is not null)
         {
@@ -182,8 +186,13 @@ public class OneLoginOptions
         return handler.CreateToken(tokenDescriptor);
     }
 
-    private string GetClaimsRequest()
+    private string? GetClaimsRequest()
     {
+        if (Claims.Count == 0)
+        {
+            return null;
+        }
+
         if (_claimsRequest is not null)
         {
             return _claimsRequest;
