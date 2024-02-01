@@ -19,8 +19,7 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
     .AddOneLogin(options =>
     {
         // Specify the authentication scheme to persist user information with.
-        // By default this is 'Cookies'.
-        //options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
         // Configure the endpoints for the One Login environment you're targeting.
         options.MetadataAddress = "https://oidc.integration.account.gov.uk/.well-known/openid-configuration";
