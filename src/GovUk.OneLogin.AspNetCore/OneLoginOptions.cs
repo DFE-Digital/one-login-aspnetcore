@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 namespace GovUk.OneLogin.AspNetCore;
@@ -21,25 +22,52 @@ public class OneLoginOptions
     /// </summary>
     public OneLoginOptions()
     {
+        OpenIdConnectOptions = new OpenIdConnectOptions()
+        {
+            // RedirectPost renders a form that's automatically submitted via JavaScript;
+            // to save us having to GDS-ify that for users who don't have JavaScript, use RedirectGet instead.
+            AuthenticationMethod = OpenIdConnectRedirectBehavior.RedirectGet,
+
+            ResponseType = OpenIdConnectResponseType.Code,
+            ResponseMode = OpenIdConnectResponseMode.Query,
+            UsePkce = false,
+            GetClaimsFromUserInfoEndpoint = true,
+            UseTokenLifetime = false,
+            SaveTokens = false,
+            MapInboundClaims = false,
+            DisableTelemetry = true
+        };
+        OpenIdConnectOptions.ProtocolValidator.RequireNonce = true;
+        OpenIdConnectOptions.TokenValidationParameters.NameClaimType = "sub";
+        OpenIdConnectOptions.TokenValidationParameters.AuthenticationType = "GOV.UK One Login";
+        OpenIdConnectOptions.Events.OnRedirectToIdentityProvider = OnRedirectToIdentityProvider;
+        OpenIdConnectOptions.Events.OnAuthorizationCodeReceived = OnAuthorizationCodeReceived;
+
         ClientAssertionJwtExpiry = TimeSpan.FromMinutes(5);  // One Login docs recommend 5 minutes
         VectorsOfTrust = @"[""Cl.Cm""]";
 
         Claims = new HashSet<string>();
 
-        Scope = new HashSet<string>()
-        {
-            "openid",
-            "email"
-        };
+        Scope.Clear();
+        Scope.Add("openid");
+        Scope.Add("email");
     }
 
     /// <inheritdoc cref="OpenIdConnectOptions.MetadataAddress"/>
     [DisallowNull]
-    public string? MetadataAddress { get; set; }
+    public string? MetadataAddress
+    {
+        get => OpenIdConnectOptions.MetadataAddress;
+        set => OpenIdConnectOptions.MetadataAddress = value;
+    }
 
     /// <inheritdoc cref="OpenIdConnectOptions.ClientId"/>
     [DisallowNull]
-    public string? ClientId { get; set; }
+    public string? ClientId
+    {
+        get => OpenIdConnectOptions.ClientId;
+        set => OpenIdConnectOptions.ClientId = value;
+    }
 
     /// <summary>
     /// Gets or sets the signing credentials of JWT assertions for authenticating the client to the token endpoint.
@@ -59,7 +87,7 @@ public class OneLoginOptions
     public TimeSpan ClientAssertionJwtExpiry { get; set; }
 
     /// <inheritdoc cref="OpenIdConnectOptions.Scope"/>
-    public ICollection<string> Scope { get; }
+    public ICollection<string> Scope => OpenIdConnectOptions.Scope;
 
     /// <summary>
     /// Gets or sets the 'ui_locales'.
@@ -89,13 +117,27 @@ public class OneLoginOptions
 
     /// <inheritdoc cref="RemoteAuthenticationOptions.SignInScheme"/>
     [DisallowNull]
-    public string? SignInScheme { get; set; }
+    public string? SignInScheme
+    {
+        get => OpenIdConnectOptions.SignInScheme;
+        set => OpenIdConnectOptions.SignInScheme = value;
+    }
 
     /// <inheritdoc cref="RemoteAuthenticationOptions.CallbackPath"/>
-    public PathString CallbackPath { get; set; }
+    public PathString CallbackPath
+    {
+        get => OpenIdConnectOptions.CallbackPath;
+        set => OpenIdConnectOptions.CallbackPath = value;
+    }
 
     /// <inheritdoc cref="OpenIdConnectOptions.SignedOutCallbackPath"/>
-    public PathString SignedOutCallbackPath { get; set; }
+    public PathString SignedOutCallbackPath
+    {
+        get => OpenIdConnectOptions.SignedOutCallbackPath;
+        set => OpenIdConnectOptions.SignedOutCallbackPath = value;
+    }
+
+    internal OpenIdConnectOptions OpenIdConnectOptions { get; private set; }
 
     internal bool IncludesCoreIdentityClaim => Claims.Contains(OneLoginClaimTypes.CoreIdentity);
 

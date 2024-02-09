@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace GovUk.OneLogin.AspNetCore;
 
@@ -60,6 +57,15 @@ public static partial class OneLoginExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(authenticationScheme);
 
+        builder.Services.Configure<AuthenticationOptions>(o =>
+        {
+            o.AddScheme(authenticationScheme, scheme =>
+            {
+                scheme.HandlerType = typeof(OneLoginHandler);
+                scheme.DisplayName = displayName;
+            });
+        });
+
         if (configureOptions is not null)
         {
             builder.Services.Configure<OneLoginOptions>(authenticationScheme, configureOptions);
@@ -71,11 +77,6 @@ public static partial class OneLoginExtensions
             return true;
         });
 
-        // Don't use AddOpenIdConnect(); it adds an IConfigureOptions registration that we don't want
-        // (the OpenIdConnectConfigureOptions type that configures options from IConfiguration).
-
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<OpenIdConnectOptions>, ConfigureOpenIdConnectForOneLogin>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<OpenIdConnectOptions>, OpenIdConnectPostConfigureOptions>());
-        return builder.AddRemoteScheme<OpenIdConnectOptions, OpenIdConnectHandler>(authenticationScheme, displayName, _ => { });
+        return builder;
     }
 }
