@@ -41,6 +41,10 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
         // Configure vectors of trust.
         // See the One Login docs for the various options to use here.
         options.VectorsOfTrust = @"[""Cl""]";
+
+        // Override the cookie name prefixes (optional)
+        options.CorrelationCookie.Name = "my-app-onelogin-correlation.";
+        options.NonceCookie.Name = "my-app-onelogin-nonce.";
     });
 ```
 

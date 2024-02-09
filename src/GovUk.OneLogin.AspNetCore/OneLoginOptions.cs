@@ -137,6 +137,20 @@ public class OneLoginOptions
         set => OpenIdConnectOptions.SignedOutCallbackPath = value;
     }
 
+    /// <inheritdoc cref="OpenIdConnectOptions.NonceCookie"/>
+    public CookieBuilder NonceCookie
+    {
+        get => OpenIdConnectOptions.NonceCookie;
+        set => OpenIdConnectOptions.NonceCookie = value;
+    }
+
+    /// <inheritdoc cref="RemoteAuthenticationOptions.CorrelationCookie"/>
+    public CookieBuilder CorrelationCookie
+    {
+        get => OpenIdConnectOptions.CorrelationCookie;
+        set => OpenIdConnectOptions.CorrelationCookie = value;
+    }
+
     internal OpenIdConnectOptions OpenIdConnectOptions { get; private set; }
 
     internal bool IncludesCoreIdentityClaim => Claims.Contains(OneLoginClaimTypes.CoreIdentity);
