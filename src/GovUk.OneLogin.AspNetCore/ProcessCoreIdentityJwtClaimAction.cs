@@ -56,6 +56,9 @@ internal class ProcessCoreIdentityJwtClaimAction : ClaimAction
         identity.AddClaim(new Claim(ClaimType, token!, valueType: "JSON"));
 
         var vc = coreIdentityPrincipal.FindFirstValue("vc");
-        identity.AddClaim(new Claim("vc", vc, valueType: "JSON"));
+        if (vc is not null)
+        {
+            identity.AddClaim(new Claim("vc", vc, valueType: "JSON"));
+        }
     }
 }
