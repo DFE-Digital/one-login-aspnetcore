@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace GovUk.OneLogin.AspNetCore;
 
@@ -76,6 +78,8 @@ public static partial class OneLoginExtensions
             o.Validate();
             return true;
         });
+
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<OneLoginOptions>, OneLoginPostConfigureOptions>());
 
         return builder;
     }
