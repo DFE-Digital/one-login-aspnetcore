@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+Fixes population of underlying `OpenIdConnectOptions`.
+
+
 ## 0.2.0
 
 ### Added cookie options
