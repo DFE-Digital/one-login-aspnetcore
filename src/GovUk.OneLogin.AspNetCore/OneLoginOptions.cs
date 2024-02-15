@@ -44,7 +44,7 @@ public class OneLoginOptions
         OpenIdConnectOptions.Events.OnAuthorizationCodeReceived = OnAuthorizationCodeReceived;
 
         ClientAssertionJwtExpiry = TimeSpan.FromMinutes(5);  // One Login docs recommend 5 minutes
-        VectorsOfTrust = @"[""Cl.Cm""]";
+        VectorOfTrust = @"[""Cl.Cm""]";
 
         Claims = new HashSet<string>();
 
@@ -98,7 +98,7 @@ public class OneLoginOptions
     /// Gets or sets the 'vtr'.
     /// </summary>
     [DisallowNull]
-    public string? VectorsOfTrust { get; set; }
+    public string? VectorOfTrust { get; set; }
 
     /// <summary>
     /// Gets the list of claims to request.
@@ -161,7 +161,7 @@ public class OneLoginOptions
         ValidateOptionNotNull(ClientId);
         ValidateOptionNotNull(ClientAuthenticationCredentials);
         ValidateOptionNotNull(ClientAssertionJwtAudience);
-        ValidateOptionNotNull(VectorsOfTrust);
+        ValidateOptionNotNull(VectorOfTrust);
         ValidateOptionNotNull(SignInScheme);
 
         if (IncludesCoreIdentityClaim)
@@ -197,9 +197,9 @@ public class OneLoginOptions
 
     internal Task OnRedirectToIdentityProvider(RedirectContext context)
     {
-        ValidateOptionNotNull(VectorsOfTrust);
+        ValidateOptionNotNull(VectorOfTrust);
 
-        context.ProtocolMessage.Parameters.Add("vtr", VectorsOfTrust);
+        context.ProtocolMessage.Parameters.Add("vtr", VectorOfTrust);
 
         if (Claims.Count > 0)
         {
