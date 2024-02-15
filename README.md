@@ -40,7 +40,7 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
 
         // Configure vectors of trust.
         // See the One Login docs for the various options to use here.
-        options.VectorsOfTrust = @"[""Cl""]";
+        options.VectorOfTrust = @"[""Cl""]";
 
         // Override the cookie name prefixes (optional)
         options.CorrelationCookie.Name = "my-app-onelogin-correlation.";
@@ -55,7 +55,7 @@ If you're using One Login for identity verification you will need some additiona
 ```cs
 .AddOneLogin(options =>
 {
-    options.VectorsOfTrust = @"[""Cl.Cm.P2""]";
+    options.VectorOfTrust = @"[""Cl.Cm.P2""]";
 
     // Add the additional claims to authorization requests.
     options.Claims.Add(OneLoginClaimTypes.CoreIdentity);

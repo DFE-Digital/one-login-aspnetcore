@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+The `VectorsOfTrust` property on `OneLoginOptions` has been renamed to `VectorOfTrust`.
+
+
 ## 0.2.1
 
 Fixes population of underlying `OpenIdConnectOptions`.
