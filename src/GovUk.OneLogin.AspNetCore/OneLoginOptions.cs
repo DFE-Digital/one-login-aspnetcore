@@ -33,7 +33,10 @@ public class OneLoginOptions
             UsePkce = false,
             GetClaimsFromUserInfoEndpoint = true,
             UseTokenLifetime = false,
+
+            // We'll save the ID token ourselves - we need it for sign out
             SaveTokens = false,
+
             MapInboundClaims = false,
             DisableTelemetry = true
         };
@@ -42,6 +45,7 @@ public class OneLoginOptions
         OpenIdConnectOptions.TokenValidationParameters.AuthenticationType = "GOV.UK One Login";
         OpenIdConnectOptions.Events.OnRedirectToIdentityProvider = OnRedirectToIdentityProvider;
         OpenIdConnectOptions.Events.OnAuthorizationCodeReceived = OnAuthorizationCodeReceived;
+        OpenIdConnectOptions.Events.OnTokenResponseReceived = OnTokenResponseReceived;
 
         ClientAssertionJwtExpiry = TimeSpan.FromMinutes(5);  // One Login docs recommend 5 minutes
         VectorOfTrust = @"[""Cl.Cm""]";
@@ -209,6 +213,23 @@ public class OneLoginOptions
         if (UiLocales is not null)
         {
             context.ProtocolMessage.Parameters.Add("ui_locales", UiLocales);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal Task OnTokenResponseReceived(TokenResponseReceivedContext context)
+    {
+        if (context.TokenEndpointResponse.IdToken is string idToken)
+        {
+            context.Properties?.StoreTokens(new[]
+            {
+                new AuthenticationToken()
+                {
+                    Name = OpenIdConnectParameterNames.IdToken,
+                    Value = idToken
+                }
+            });
         }
 
         return Task.CompletedTask;

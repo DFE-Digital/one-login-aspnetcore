@@ -6,6 +6,10 @@
 
 The `VectorsOfTrust` property on `OneLoginOptions` has been renamed to `VectorOfTrust`.
 
+### Fixes
+
+Fixes sign out with a `post_logout_redirect_uri` by sending the `id_token_hint`.
+
 
 ## 0.2.1
 
