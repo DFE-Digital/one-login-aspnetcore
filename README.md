@@ -34,9 +34,12 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
         // Configure the private key used for authentication.
         // See the RSA class' documentation for the various ways to do this.
         // Here we're loading a PEM-encoded private key from configuration.
-        var rsa = RSA.Create();
-        rsa.ImportFromPem(builder.Configuration["OneLogin:PrivateKeyPem"]);
-        options.ClientAuthenticationCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
+        using (var rsa = RSA.Create())
+        {
+            rsa.ImportFromPem(builder.Configuration["OneLogin:PrivateKeyPem"]);
+            options.ClientAuthenticationCredentials = new SigningCredentials(
+                new RsaSecurityKey(rsa.ExportParameters(includePrivateParameters: true)), SecurityAlgorithms.RsaSha256);
+        }
 
         // Configure vectors of trust.
         // See the One Login docs for the various options to use here.
