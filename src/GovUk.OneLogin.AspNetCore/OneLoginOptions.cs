@@ -165,7 +165,6 @@ public class OneLoginOptions
         ValidateOptionNotNull(ClientId);
         ValidateOptionNotNull(ClientAuthenticationCredentials);
         ValidateOptionNotNull(ClientAssertionJwtAudience);
-        ValidateOptionNotNull(VectorOfTrust);
         ValidateOptionNotNull(SignInScheme);
 
         if (IncludesCoreIdentityClaim)
@@ -201,9 +200,12 @@ public class OneLoginOptions
 
     internal Task OnRedirectToIdentityProvider(RedirectContext context)
     {
-        ValidateOptionNotNull(VectorOfTrust);
+        var vectorOfTrust = (context.Properties.TryGetVectorOfTrust(out var value) ? value : VectorOfTrust) ??
+            throw new InvalidOperationException(
+                $"VectorOfTrust has not been set. " +
+                $"Either specify it on {nameof(OneLoginOptions)} or by calling {nameof(AuthenticationPropertiesExtensions.SetVectorOfTrust)} on {nameof(AuthenticationOptions)}.");
 
-        context.ProtocolMessage.Parameters.Add("vtr", VectorOfTrust);
+        context.ProtocolMessage.Parameters.Add("vtr", vectorOfTrust);
 
         if (Claims.Count > 0)
         {
