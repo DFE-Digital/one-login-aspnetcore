@@ -51,6 +51,7 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
     });
 ```
 
+
 ### Identity verification
 
 If you're using One Login for identity verification you will need some additional configuration:
@@ -71,6 +72,23 @@ If you're using One Login for identity verification you will need some additiona
     options.CoreIdentityClaimIssuer = "https://identity.integration.account.gov.uk/";
 })
 ```
+
+
+### Two stage authentication
+
+If you're using identity verification, [One Login recommend](https://docs.sign-in.service.gov.uk/integrate-with-integration-environment/authenticate-your-user/#make-a-request-for-authentication-and-identity) sending two separate requests;
+one for authentication and one for identity. To do this you can override the `VectorOfTrust` configured in `OneLoginOptions` on a per-request basis; an example is shown below.
+
+```cs
+public IActionResult SignIn()
+{
+    var properties = new AuthenticationProperties();
+    properties.SetVectorOfTrust(@"[""Cl.Cm""]");  // authentication only
+    //properties.SetVectorOfTrust(@"[""Cl.Cm.P2""]");  // identity verification
+    return Challenge(properties, authenticationSchemes: OneLoginDefaults.AuthenticationScheme);
+}
+```
+
 
 
 ## Retrieving user information

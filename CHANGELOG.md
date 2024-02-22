@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New features
+
+Vector of trust can overriden on a per-request basis by calling `SetVectorOfTrust()` on the `AuthenticationProperties` passed to `Challenge`.
+
 ### Breaking changes
 
 The `VectorsOfTrust` property on `OneLoginOptions` has been renamed to `VectorOfTrust`.
