@@ -24,4 +24,9 @@ public static class OneLoginClaimTypes
     /// The claim type of the driving licence claim.
     /// </summary>
     public const string DrivingLicence = "https://vocab.account.gov.uk/v1/drivingPermit";
+
+    /// <summary>
+    /// The claim type of the National Insurance number claim.
+    /// </summary>
+    public const string NationalInsuranceNumber = "https://vocab.account.gov.uk/v1/socialSecurityRecord";
 }
