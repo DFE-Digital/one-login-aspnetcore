@@ -43,9 +43,7 @@ public class OneLoginOptions
         OpenIdConnectOptions.ProtocolValidator.RequireNonce = true;
         OpenIdConnectOptions.TokenValidationParameters.NameClaimType = "sub";
         OpenIdConnectOptions.TokenValidationParameters.AuthenticationType = "GOV.UK One Login";
-        OpenIdConnectOptions.Events.OnRedirectToIdentityProvider = OnRedirectToIdentityProvider;
-        OpenIdConnectOptions.Events.OnAuthorizationCodeReceived = OnAuthorizationCodeReceived;
-        OpenIdConnectOptions.Events.OnTokenResponseReceived = OnTokenResponseReceived;
+        OpenIdConnectOptions.Events = Events = new DelegateEventsWrapper(this);
 
         ClientAssertionJwtExpiry = TimeSpan.FromMinutes(5);  // One Login docs recommend 5 minutes
         VectorOfTrust = @"[""Cl.Cm""]";
@@ -154,6 +152,9 @@ public class OneLoginOptions
         get => OpenIdConnectOptions.CorrelationCookie;
         set => OpenIdConnectOptions.CorrelationCookie = value;
     }
+
+    /// <inheritdoc cref="OpenIdConnectOptions.Events"/>
+    public OpenIdConnectEvents Events { get; }
 
     internal OpenIdConnectOptions OpenIdConnectOptions { get; private set; }
 
@@ -301,4 +302,82 @@ public class OneLoginOptions
     [DoesNotReturn]
     private static void ThrowMissingOptionException(string optionName) =>
         throw new ArgumentException($"The '{optionName}' option must be provided.", optionName);
+
+    private sealed class DelegateEventsWrapper : OpenIdConnectEvents
+    {
+        private readonly OneLoginOptions _options;
+
+        public DelegateEventsWrapper(OneLoginOptions options)
+        {
+            _options = options;
+        }
+
+        public override Task AccessDenied(AccessDeniedContext context)
+        {
+            return base.AccessDenied(context);
+        }
+
+        public override Task AuthenticationFailed(AuthenticationFailedContext context)
+        {
+            return base.AuthenticationFailed(context);
+        }
+
+        public async override Task AuthorizationCodeReceived(AuthorizationCodeReceivedContext context)
+        {
+            await _options.OnAuthorizationCodeReceived(context);
+            await base.AuthorizationCodeReceived(context);
+        }
+
+        public override Task MessageReceived(MessageReceivedContext context)
+        {
+            return base.MessageReceived(context);
+        }
+
+        public async override Task RedirectToIdentityProvider(RedirectContext context)
+        {
+            await _options.OnRedirectToIdentityProvider(context);
+            await base.RedirectToIdentityProvider(context);
+        }
+
+        public override Task RedirectToIdentityProviderForSignOut(RedirectContext context)
+        {
+            return base.RedirectToIdentityProviderForSignOut(context);
+        }
+
+        public override Task RemoteFailure(RemoteFailureContext context)
+        {
+            return base.RemoteFailure(context);
+        }
+
+        public override Task RemoteSignOut(RemoteSignOutContext context)
+        {
+            return base.RemoteSignOut(context);
+        }
+
+        public override Task SignedOutCallbackRedirect(RemoteSignOutContext context)
+        {
+            return base.SignedOutCallbackRedirect(context);
+        }
+
+        public override Task TicketReceived(TicketReceivedContext context)
+        {
+            return base.TicketReceived(context);
+        }
+
+        public async override Task TokenResponseReceived(TokenResponseReceivedContext context)
+        {
+            await _options.OnTokenResponseReceived(context);
+            await base.TokenResponseReceived(context);
+        }
+
+        public override Task TokenValidated(TokenValidatedContext context)
+        {
+            return base.TokenValidated(context);
+        }
+
+        public override Task UserInformationReceived(UserInformationReceivedContext context)
+        {
+            return base.UserInformationReceived(context);
+        }
+    }
 }

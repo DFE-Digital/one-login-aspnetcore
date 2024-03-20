@@ -4,6 +4,8 @@
 
 Adds `NationalInsuranceNumber` member to `OneLoginClaimTypes`.
 
+Adds `OpenIdConnectEvents` property to `OneLoginOptions` to allow more control over the OIDC interactions with One Login.
+
 ## 0.3.0
 
 ### New features
