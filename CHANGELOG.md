@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+Expose `SaveTokens` option on `OneLoginOptions`.
+
+
 ## 0.3.1
 
 Adds `NationalInsuranceNumber` member to `OneLoginClaimTypes`.
