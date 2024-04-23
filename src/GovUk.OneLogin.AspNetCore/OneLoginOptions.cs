@@ -34,9 +34,6 @@ public class OneLoginOptions
             GetClaimsFromUserInfoEndpoint = true,
             UseTokenLifetime = false,
 
-            // We'll save the ID token ourselves - we need it for sign out
-            SaveTokens = false,
-
             MapInboundClaims = false,
             DisableTelemetry = true
         };
@@ -156,6 +153,13 @@ public class OneLoginOptions
     /// <inheritdoc cref="OpenIdConnectOptions.Events"/>
     public OpenIdConnectEvents Events { get; }
 
+    /// <inheritdoc cref="RemoteAuthenticationOptions.SaveTokens"/>
+    public bool SaveTokens
+    {
+        get => OpenIdConnectOptions.SaveTokens;
+        set => OpenIdConnectOptions.SaveTokens = value;
+    }
+
     internal OpenIdConnectOptions OpenIdConnectOptions { get; private set; }
 
     internal bool IncludesCoreIdentityClaim => Claims.Contains(OneLoginClaimTypes.CoreIdentity);
@@ -223,7 +227,10 @@ public class OneLoginOptions
 
     internal Task OnTokenResponseReceived(TokenResponseReceivedContext context)
     {
-        if (context.TokenEndpointResponse.IdToken is string idToken)
+        // Always store the id_token, even if SaveTokens is false;
+        // without it sign out doesn't work end-to-end.
+
+        if (!context.Options.SaveTokens && context.TokenEndpointResponse.IdToken is string idToken)
         {
             context.Properties?.StoreTokens(new[]
             {
