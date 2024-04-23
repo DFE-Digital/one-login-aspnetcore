@@ -53,6 +53,8 @@ public class OneLoginOptions
         Scope.Clear();
         Scope.Add("openid");
         Scope.Add("email");
+
+        UseJwtSecuredAuthorizationRequest = true;
     }
 
     /// <inheritdoc cref="OpenIdConnectOptions.MetadataAddress"/>
@@ -156,6 +158,12 @@ public class OneLoginOptions
     /// <inheritdoc cref="OpenIdConnectOptions.Events"/>
     public OpenIdConnectEvents Events { get; }
 
+    /// <summary>
+    /// Defines whether the authorization parameters will be passed as a JWT.
+    /// This property is set to <see langword="true"/> by default.
+    /// </summary>
+    public bool UseJwtSecuredAuthorizationRequest { get; set; }
+
     internal OpenIdConnectOptions OpenIdConnectOptions { get; private set; }
 
     internal bool IncludesCoreIdentityClaim => Claims.Contains(OneLoginClaimTypes.CoreIdentity);
@@ -199,7 +207,7 @@ public class OneLoginOptions
         return Task.CompletedTask;
     }
 
-    internal Task OnRedirectToIdentityProvider(RedirectContext context)
+    internal async Task OnRedirectToIdentityProvider(RedirectContext context)
     {
         var vectorOfTrust = (context.Properties.TryGetVectorOfTrust(out var value) ? value : VectorOfTrust) ??
             throw new InvalidOperationException(
@@ -218,7 +226,18 @@ public class OneLoginOptions
             context.ProtocolMessage.Parameters.Add("ui_locales", UiLocales);
         }
 
-        return Task.CompletedTask;
+        if (UseJwtSecuredAuthorizationRequest)
+        {
+            var configuration = await OpenIdConnectOptions.ConfigurationManager!.GetConfigurationAsync(CancellationToken.None);
+
+            context.ProtocolMessage = new JwtSecuredAuthorizationRequestMessage(
+                context.ProtocolMessage,
+                createJwt: claims =>
+                {
+                    claims.Add("aud", configuration.AuthorizationEndpoint);
+                    return CreateJwt(claims, handler => handler.SetDefaultTimesOnTokenCreation = false);
+                });
+        }
     }
 
     internal Task OnTokenResponseReceived(TokenResponseReceivedContext context)
@@ -238,6 +257,20 @@ public class OneLoginOptions
         return Task.CompletedTask;
     }
 
+    private string CreateJwt(IDictionary<string, object> claims, Action<JsonWebTokenHandler>? configureHandler = null)
+    {
+        var handler = new JsonWebTokenHandler();
+        configureHandler?.Invoke(handler);
+
+        var tokenDescriptor = new SecurityTokenDescriptor()
+        {
+            Claims = claims,
+            SigningCredentials = ClientAuthenticationCredentials
+        };
+
+        return handler.CreateToken(tokenDescriptor);
+    }
+
     private string CreateClientAssertionJwt()
     {
         // https://docs.sign-in.service.gov.uk/integrate-with-integration-environment/integrate-with-code-flow/#create-a-jwt
@@ -245,25 +278,17 @@ public class OneLoginOptions
         ValidateOptionNotNull(ClientAssertionJwtAudience);
         ValidateOptionNotNull(ClientAuthenticationCredentials);
 
-        var handler = new JsonWebTokenHandler();
-
         var jwtId = Guid.NewGuid().ToString("N");
 
-        var tokenDescriptor = new SecurityTokenDescriptor()
+        return CreateJwt(new Dictionary<string, object>()
         {
-            Claims = new Dictionary<string, object>()
-            {
-                { "aud", ClientAssertionJwtAudience },
-                { "iss", ClientId! },
-                { "sub", ClientId! },
-                { "exp", DateTimeOffset.UtcNow.Add(ClientAssertionJwtExpiry).ToUnixTimeSeconds() },
-                { "jti", jwtId },
-                { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() }
-            },
-            SigningCredentials = ClientAuthenticationCredentials
-        };
-
-        return handler.CreateToken(tokenDescriptor);
+            { "aud", ClientAssertionJwtAudience },
+            { "iss", ClientId! },
+            { "sub", ClientId! },
+            { "exp", DateTimeOffset.UtcNow.Add(ClientAssertionJwtExpiry).ToUnixTimeSeconds() },
+            { "jti", jwtId },
+            { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() }
+        });
     }
 
     private string GetClaimsRequest()
