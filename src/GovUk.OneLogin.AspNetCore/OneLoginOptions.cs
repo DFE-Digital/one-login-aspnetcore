@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -16,6 +17,7 @@ namespace GovUk.OneLogin.AspNetCore;
 public class OneLoginOptions
 {
     private string? _claimsRequest;
+    private ICollection<string> _vectorsOfTrust;
 
     /// <summary>
     /// Initializes a new <see cref="OneLoginOptions"/>.
@@ -46,9 +48,9 @@ public class OneLoginOptions
         OpenIdConnectOptions.Events = Events = new DelegateEventsWrapper(this);
 
         ClientAssertionJwtExpiry = TimeSpan.FromMinutes(5);  // One Login docs recommend 5 minutes
-        VectorOfTrust = @"[""Cl.Cm""]";
+        _vectorsOfTrust = new List<string>() { "Cl.Cm" };
 
-        Claims = new HashSet<string>();
+        Claims = new List<string>();
 
         Scope.Clear();
         Scope.Add("openid");
@@ -99,10 +101,17 @@ public class OneLoginOptions
     public string? UiLocales { get; set; }
 
     /// <summary>
-    /// Gets or sets the 'vtr'.
+    /// Gets or sets the vectors of trust.
     /// </summary>
-    [DisallowNull]
-    public string? VectorOfTrust { get; set; }
+    public ICollection<string> VectorsOfTrust
+    {
+        get => _vectorsOfTrust;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _vectorsOfTrust = value;
+        }
+    }
 
     /// <summary>
     /// Gets the list of claims to request.
@@ -209,12 +218,13 @@ public class OneLoginOptions
 
     internal async Task OnRedirectToIdentityProvider(RedirectContext context)
     {
-        var vectorOfTrust = (context.Properties.TryGetVectorOfTrust(out var value) ? value : VectorOfTrust) ??
+        var vectorsOfTrust = (context.Properties.TryGetVectorsOfTrust(out var value) ? (IEnumerable<string>)value : VectorsOfTrust) ??
             throw new InvalidOperationException(
-                $"VectorOfTrust has not been set. " +
-                $"Either specify it on {nameof(OneLoginOptions)} or by calling {nameof(AuthenticationPropertiesExtensions.SetVectorOfTrust)} on {nameof(AuthenticationOptions)}.");
+                $"VectorsOfTrust has not been set. " +
+                $"Either specify it on {nameof(OneLoginOptions)} or by calling {nameof(AuthenticationPropertiesExtensions.SetVectorsOfTrust)} on {nameof(AuthenticationProperties)}.");
 
-        context.ProtocolMessage.Parameters.Add("vtr", vectorOfTrust);
+        var vtr = JsonSerializer.Serialize(vectorsOfTrust);
+        context.ProtocolMessage.Parameters.Add("vtr", vtr);
 
         if (Claims.Count > 0)
         {
