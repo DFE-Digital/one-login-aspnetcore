@@ -4,6 +4,8 @@
 
 Adds support for JWT-secured OAuth 2.0 authorisation request (JAR) and enables it by default.
 
+Replaces the `string` `VectorOfTrust` property on `OneLoginOptions` with an `ICollection<string>` property `VectorOfTrusts`.
+
 ## 0.3.1
 
 Adds `NationalInsuranceNumber` member to `OneLoginClaimTypes`.
