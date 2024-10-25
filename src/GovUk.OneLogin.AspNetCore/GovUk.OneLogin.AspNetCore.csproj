@@ -9,7 +9,7 @@
     <Description>ASP.NET Core integration for GOV.UK One Login</Description>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <MinVerTagPrefix>v</MinVerTagPrefix>
-    <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+    <MinVerMinimumMajorMinor>0.4</MinVerMinimumMajorMinor>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

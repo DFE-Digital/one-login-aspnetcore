@@ -25,6 +25,8 @@ public class OneLoginPostConfigureOptions : IPostConfigureOptions<OneLoginOption
     {
         ArgumentNullException.ThrowIfNull(name);
 
+        options.OpenIdConnectOptions.MetadataAddress = OneLoginEnvironments.GetMetadataAddress(options.Environment!);
+
         if (options.IncludesCoreIdentityClaim)
         {
             options.OpenIdConnectOptions.ClaimActions.Add(new ProcessCoreIdentityJwtClaimAction(options));

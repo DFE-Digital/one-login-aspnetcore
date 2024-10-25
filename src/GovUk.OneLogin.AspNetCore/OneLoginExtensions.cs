@@ -80,6 +80,7 @@ public static partial class OneLoginExtensions
         });
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<OneLoginOptions>, OneLoginPostConfigureOptions>());
+        builder.Services.AddHttpClient();
 
         return builder;
     }

@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +19,7 @@ public class OneLoginOptions
 {
     private string? _claimsRequest;
     private ICollection<string> _vectorsOfTrust;
+    private CoreIdentityHelper? _coreIdentityHelper;
 
     /// <summary>
     /// Initializes a new <see cref="OneLoginOptions"/>.
@@ -59,13 +61,14 @@ public class OneLoginOptions
         UseJwtSecuredAuthorizationRequest = true;
     }
 
-    /// <inheritdoc cref="OpenIdConnectOptions.MetadataAddress"/>
+    /// <summary>
+    /// The name of the One Login environment.
+    /// </summary>
+    /// <remarks>
+    /// Reference <see cref="OneLoginEnvironments"/> for the options.
+    /// </remarks>
     [DisallowNull]
-    public string? MetadataAddress
-    {
-        get => OpenIdConnectOptions.MetadataAddress;
-        set => OpenIdConnectOptions.MetadataAddress = value;
-    }
+    public string? Environment { get; set; }
 
     /// <inheritdoc cref="OpenIdConnectOptions.ClientId"/>
     [DisallowNull]
@@ -80,12 +83,6 @@ public class OneLoginOptions
     /// </summary>
     [DisallowNull]
     public SigningCredentials? ClientAuthenticationCredentials { get; set; }
-
-    /// <summary>
-    /// Gets or sets the <c>aud</c> claim of JWT assertions for authenticating the client to the token endpoint.
-    /// </summary>
-    [DisallowNull]
-    public string? ClientAssertionJwtAudience { get; set; }
 
     /// <summary>
     /// Gets or sets the expiration time of JWT assertions for authenticating the client to the token endpoint.
@@ -117,16 +114,6 @@ public class OneLoginOptions
     /// Gets the list of claims to request.
     /// </summary>
     public ICollection<string> Claims { get; }
-
-    /// <summary>
-    /// Gets or sets the expected issuer of the core identity claim.
-    /// </summary>
-    public string? CoreIdentityClaimIssuer { get; set; }
-
-    /// <summary>
-    /// Gets or sets the expected signing key of the core identity claim.
-    /// </summary>
-    public SecurityKey? CoreIdentityClaimIssuerSigningKey { get; set; }
 
     /// <inheritdoc cref="RemoteAuthenticationOptions.SignInScheme"/>
     [DisallowNull]
@@ -177,19 +164,14 @@ public class OneLoginOptions
 
     internal bool IncludesCoreIdentityClaim => Claims.Contains(OneLoginClaimTypes.CoreIdentity);
 
+    internal CoreIdentityHelper CoreIdentityHelper => _coreIdentityHelper ?? throw new InvalidOperationException("DidDocumentHelper has not been created.");
+
     internal void Validate()
     {
-        ValidateOptionNotNull(MetadataAddress);
+        ValidateOptionNotNull(Environment);
         ValidateOptionNotNull(ClientId);
         ValidateOptionNotNull(ClientAuthenticationCredentials);
-        ValidateOptionNotNull(ClientAssertionJwtAudience);
         ValidateOptionNotNull(SignInScheme);
-
-        if (IncludesCoreIdentityClaim)
-        {
-            ValidateOptionNotNull(CoreIdentityClaimIssuer);
-            ValidateOptionNotNull(CoreIdentityClaimIssuerSigningKey);
-        }
 
         if (CallbackPath == null || !CallbackPath.HasValue)
         {
@@ -250,7 +232,7 @@ public class OneLoginOptions
         }
     }
 
-    internal Task OnTokenResponseReceived(TokenResponseReceivedContext context)
+    internal async Task OnTokenResponseReceived(TokenResponseReceivedContext context)
     {
         if (context.TokenEndpointResponse.IdToken is string idToken)
         {
@@ -264,7 +246,8 @@ public class OneLoginOptions
             });
         }
 
-        return Task.CompletedTask;
+        _coreIdentityHelper ??= ActivatorUtilities.CreateInstance<CoreIdentityHelper>(context.HttpContext.RequestServices, this);
+        await _coreIdentityHelper.EnsureDidDocument();
     }
 
     private string CreateJwt(IDictionary<string, object> claims, Action<JsonWebTokenHandler>? configureHandler = null)
@@ -285,14 +268,15 @@ public class OneLoginOptions
     {
         // https://docs.sign-in.service.gov.uk/integrate-with-integration-environment/integrate-with-code-flow/#create-a-jwt
 
-        ValidateOptionNotNull(ClientAssertionJwtAudience);
         ValidateOptionNotNull(ClientAuthenticationCredentials);
+        ValidateOptionNotNull(Environment);
 
         var jwtId = Guid.NewGuid().ToString("N");
+        var audience = OneLoginEnvironments.GetClientAssertionJwtAudience(Environment!);
 
         return CreateJwt(new Dictionary<string, object>()
         {
-            { "aud", ClientAssertionJwtAudience },
+            { "aud", audience },
             { "iss", ClientId! },
             { "sub", ClientId! },
             { "exp", DateTimeOffset.UtcNow.Add(ClientAssertionJwtExpiry).ToUnixTimeSeconds() },
