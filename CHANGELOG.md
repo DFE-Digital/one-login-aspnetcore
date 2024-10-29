@@ -6,6 +6,9 @@ Adds support for JWT-secured OAuth 2.0 authorisation request (JAR) and enables i
 
 Replaces the `string` `VectorOfTrust` property on `OneLoginOptions` with an `ICollection<string>` property `VectorOfTrusts`.
 
+Removes the `MetadataAddress`, `ClientAssertionJwtAudience`, `CoreIdentityClaimIssuer` and `CoreIdentityClaimIssuerSigningKey` options and replaces them with `Environment`.
+The `CoreIdentityClaimIssuerSigningKey` is now sourced from One Login's DID and is refreshed automatically.
+
 ## 0.3.1
 
 Adds `NationalInsuranceNumber` member to `OneLoginClaimTypes`.

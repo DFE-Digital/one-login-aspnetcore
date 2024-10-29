@@ -18,12 +18,12 @@ builder.Services.AddAuthentication(defaultScheme: OneLoginDefaults.Authenticatio
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddOneLogin(options =>
     {
-        // Specify the authentication scheme to persist user information with.
+        // Configure the authentication scheme to persist user information with;
+        // typically this will be 'Cookies'.
         options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
-        // Configure the endpoints for the One Login environment you're targeting.
-        options.MetadataAddress = "https://oidc.integration.account.gov.uk/.well-known/openid-configuration";
-        options.ClientAssertionJwtAudience = "https://oidc.integration.account.gov.uk/token";
+        // Configure the One Login environment.
+        options.Environment = OneLoginEnvironments.Integration;
 
         // Configure your client information.
         // CallbackPath and SignedOutCallbackPath must align with the redirect_uris and post_logout_redirect_uris configured in One Login.
@@ -59,32 +59,25 @@ If you're using One Login for identity verification you will need some additiona
 ```cs
 .AddOneLogin(options =>
 {
-    options.VectorOfTrust = @"[""Cl.Cm.P2""]";
+    options.VectorsOfTrust = ["Cl.Cm.P2"];
 
     // Add the additional claims to authorization requests.
     options.Claims.Add(OneLoginClaimTypes.CoreIdentity);
-
-    // If you've specified the core identity claim, configure its validation parameters.
-    // Ask the One Login team for the public key used for signing the core identity claim.
-    var coreIdentityIssuer = ECDsa.Create();
-    coreIdentityIssuer.ImportFromPem(builder.Configuration["OneLogin:CoreIdentityClaimPublicKeyPem"]);
-    options.CoreIdentityClaimIssuerSigningKey = new ECDsaSecurityKey(coreIdentityIssuer);
-    options.CoreIdentityClaimIssuer = "https://identity.integration.account.gov.uk/";
 })
 ```
 
 
-### Two stage authentication
+### Two stage authentication and ID verification
 
 If you're using identity verification, [One Login recommend](https://docs.sign-in.service.gov.uk/integrate-with-integration-environment/authenticate-your-user/#make-a-request-for-authentication-and-identity) sending two separate requests;
-one for authentication and one for identity. To do this you can override the `VectorOfTrust` configured in `OneLoginOptions` on a per-request basis; an example is shown below.
+one for authentication and one for identity. To do this you can override the `VectorsOfTrust` configured in `OneLoginOptions` on a per-request basis; an example is shown below.
 
 ```cs
 public IActionResult SignIn()
 {
     var properties = new AuthenticationProperties();
-    properties.SetVectorOfTrust(@"[""Cl.Cm""]");  // authentication only
-    //properties.SetVectorOfTrust(@"[""Cl.Cm.P2""]");  // identity verification
+    properties.SetVectorsOfTrust(["Cl.Cm"]);  // authentication only
+    //properties.SetVectorsOfTrust(["Cl.Cm.P2"]);  // identity verification
     return Challenge(properties, authenticationSchemes: OneLoginDefaults.AuthenticationScheme);
 }
 ```
@@ -105,7 +98,7 @@ After the user is signed in, `HttpContext.User` will be populated with a `Claims
 If identity verification was requested *and* identity verification was successful then a `https://vocab.account.gov.uk/v1/coreIdentityJWT` claim will also be present. Its value is JSON-encoded.
 See the [One Login docs](https://docs.sign-in.service.gov.uk/integrate-with-integration-environment/prove-users-identity/#prove-your-user-39-s-identity) for more information on the data contained in this claim.
 
-A set of extension methods over `ClaimsPrincipal` is provided for extracting information name and birth date information from the core identity JWT -
+A set of extension methods over `ClaimsPrincipal` is provided for extracting the user's name and birth date from the core identity JWT -
 `GetCoreIdentityName()`, `GetCoreIdentityNames()`, `GetCoreIdentityBirthDate()` and `GetCoreIdentityBirthDates()`.
 
 

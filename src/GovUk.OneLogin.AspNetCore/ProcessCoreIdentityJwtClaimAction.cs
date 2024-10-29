@@ -10,27 +10,14 @@ internal class ProcessCoreIdentityJwtClaimAction : ClaimAction
 {
     public new const string ClaimType = "https://vocab.account.gov.uk/v1/coreIdentityJWT";
 
-    private readonly JwtSecurityTokenHandler _tokenHandler;
-    private readonly TokenValidationParameters _tokenValidationParameters;
+    private readonly OneLoginOptions _oneLoginOptions;
 
     public ProcessCoreIdentityJwtClaimAction(OneLoginOptions oneLoginOptions) :
         base(ClaimType, valueType: JsonClaimValueTypes.Json)
     {
-        OneLoginOptions.ValidateOptionNotNull(oneLoginOptions.CoreIdentityClaimIssuer);
-        OneLoginOptions.ValidateOptionNotNull(oneLoginOptions.CoreIdentityClaimIssuerSigningKey);
+        ArgumentNullException.ThrowIfNull(oneLoginOptions);
 
-        _tokenHandler = new JwtSecurityTokenHandler
-        {
-            MapInboundClaims = false
-        };
-
-        _tokenValidationParameters = new TokenValidationParameters()
-        {
-            ValidIssuer = oneLoginOptions.CoreIdentityClaimIssuer,
-            ValidateAudience = false,
-            IssuerSigningKey = oneLoginOptions.CoreIdentityClaimIssuerSigningKey,
-            NameClaimType = "sub"
-        };
+        _oneLoginOptions = oneLoginOptions;
     }
 
     public override void Run(JsonElement userData, ClaimsIdentity identity, string issuer)
@@ -44,9 +31,9 @@ internal class ProcessCoreIdentityJwtClaimAction : ClaimAction
             return;
         }
 
-        var token = identityJwtElement.GetString();
+        var token = identityJwtElement.GetString()!;
 
-        var coreIdentityPrincipal = _tokenHandler.ValidateToken(token, _tokenValidationParameters, out _);
+        var coreIdentityPrincipal = _oneLoginOptions.CoreIdentityHelper.ValidateCoreIdentity(token);
 
         if (coreIdentityPrincipal.FindFirstValue("sub") != identity.FindFirst("sub")?.Value)
         {
